@@ -1,0 +1,310 @@
+{
+	"info": {
+		"_postman_id": "5c3885ce-cbf9-42f2-9d61-8c58f695b1f6",
+		"name": "DummyAPI",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Criar Funcionario",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "23e53155-f066-4c7d-8450-82b1d193e650",
+						"exec": [
+							"//Validar retorno de status do servidor",
+							"pm.test(\"Successful POST request\", function () {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200,201,202]);",
+							"});",
+							"",
+							"//Validar status do cadastro",
+							"pm.test(\"Status do cadastro\", function () {",
+							"    pm.response.to.have.status(\"OK\");",
+							"});",
+							"",
+							"//Validar dados retornados no response",
+							"pm.test(\"Dados retornados em relação aos enviados\", function () {",
+							"    pm.expect(pm.response.text()).to.include(pm.variables.get(\"nome\"));",
+							"    pm.expect(pm.response.text()).to.include(pm.variables.get(\"salario\"));",
+							"    pm.expect(pm.response.text()).to.include(pm.variables.get(\"idade\"));",
+							"});",
+							"",
+							"//armazena em variavel de ambiente o ID retornado para consulta e remoção (delete)",
+							"var jsonData = JSON.parse(responseBody);",
+							"pm.environment.set(\"userid\", jsonData.data.id)",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "7e8790f6-9d88-4df5-8d56-117b82c856c7",
+						"exec": [
+							"pm.environment.set(\"nome\", getRandomName());",
+							"function getRandomName() {",
+							"    const newName = pm.variables.replaceIn(\"{{$randomFirstName}}\");",
+							"    //console.log(pm.environment.get(\"name\"));",
+							"    return newName;",
+							"}",
+							"",
+							"pm.environment.set(\"salario\", getRandomSalario());",
+							"function getRandomSalario() {",
+							"    const newSal = pm.variables.replaceIn(\"{{$randomInt}}\");",
+							"    return newSal;",
+							"}",
+							"",
+							"pm.environment.set(\"idade\", getRandomIdade());",
+							"function getRandomIdade() {",
+							"    const newAge = pm.variables.replaceIn(_.random(18, 90));",
+							"    return newAge;",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {}
+			},
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": " \t{\n \t\t\"name\":\"{{nome}}\",\n \t\t\"salary\":\"{{salario}}\",\n \t\t\"age\":\"{{idade}}\",\n \t    \"profile_image\": \"\"\n \t}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/api/v1/create",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"create"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Consulta funcionarios (fora do escopo)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{url}}/api/v1/employees",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"employees"
+					]
+				},
+				"description": "Consulta todos os funcionarios cadastrados"
+			},
+			"response": []
+		},
+		{
+			"name": "Consulta funcionario criado",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "de280da8-9b32-44b5-b562-5982a971b4aa",
+						"exec": [
+							"//Validar retorno de status do servidor",
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"//Validar dados retornados na consulta com dados utilizados no cadastro, campo a campo",
+							"var jsonData = JSON.parse(responseBody);",
+							"pm.test(\"Validar dados cadastrados\", function () {",
+							"    pm.expect(jsonData.data.employee_name).is.to.equal(pm.environment.get(\"nome\"));",
+							"    pm.expect(jsonData.data.employee_salary).is.to.equal(pm.environment.get(\"salario\"));",
+							"    pm.expect(jsonData.data.employee_age).is.to.equal(pm.environment.get(\"idade\")); ",
+							"}); ",
+							"",
+							"//Infelizmente parece existir um erro no servidor e o ID não esta sendo salvo adequadamente. Se for pesquisado o cadastro que foi recém criado, não retorna resultado. Para um cadastro já existente, o retorno funciona corretamente. Mantive então o script para pesquisa do funcionario que foi gravado por mim, apesar de retornar erro.",
+							"//Se por exemplo for utilizado o endpoint {{url}}/api/v1/employee/3, que é um cadastro pré-existente, irá retornar dados, mas não irá funcionar os testes que validam os dados cadastrados, pois esses testes procuram validar as informações que eu gerei no cadastro, através das variaveis armazenadas no ambiente."
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{url}}/api/v1/employee/{{userid}}",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"employee",
+						"{{userid}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Deleta funcionario",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "302831d4-4325-462d-8f30-14c84b80c634",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"//Validar status do delete",
+							"pm.test(\"Status Delete\", function () {",
+							"    pm.response.to.have.status(\"OK\");",
+							"});",
+							"",
+							"//Validar mensagem de retorno",
+							"pm.test(\"Mensagem retorno delete\", function () {",
+							"    pm.expect(pm.response.text()).to.include(\"successfully! deleted Records\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{url}}/api/v1/delete/{{userid}}",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"delete",
+						"{{userid}}"
+					]
+				},
+				"description": "Deleta funcionario criado"
+			},
+			"response": []
+		},
+		{
+			"name": "Consulta funcionario deletado",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "de280da8-9b32-44b5-b562-5982a971b4aa",
+						"exec": [
+							"//Valida status de retorno e mensagem da API",
+							"pm.test(\"Status code is 401\", function () {",
+							"    pm.response.to.have.status(401);",
+							"});",
+							"",
+							"",
+							"pm.test(\"Funcionario deletado\", function () {",
+							"",
+							"    if(responseCode.code == 401){",
+							"        var jsonData = pm.response.json()",
+							"        pm.expect(jsonData.status).to.equal(\"failed\")",
+							"    }",
+							"",
+							"});",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{url}}/api/v1/employee/{{userid}}",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"employee",
+						"{{userid}}"
+					]
+				},
+				"description": "Consulta novamente o funcionario para validar se foi realmente deletado da base"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "39780b05-5c31-4394-8432-ab3a8483d231",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "b6c1f10e-935f-4db5-b522-e118e043d27a",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"id": "5090e7e5-a27b-4477-86d1-b74333a3d267",
+			"key": "url",
+			"value": "http://dummy.restapiexample.com",
+			"type": "string"
+		},
+		{
+			"id": "7e57fffd-600e-4414-8b14-cea36fa84dc3",
+			"key": "nome",
+			"value": "",
+			"type": "string",
+			"disabled": true
+		},
+		{
+			"id": "30987c17-2e42-4040-8302-a202941fbce1",
+			"key": "idade",
+			"value": "",
+			"type": "string",
+			"disabled": true
+		},
+		{
+			"id": "d11c5af0-eaa8-4ccb-9905-ec84ae82e90a",
+			"key": "salario",
+			"value": "",
+			"type": "string",
+			"disabled": true
+		}
+	],
+	"protocolProfileBehavior": {}
+}
